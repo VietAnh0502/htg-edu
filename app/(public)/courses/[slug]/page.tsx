@@ -1,12 +1,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowLeft, Award, BookOpen, CalendarDays, Check, CheckCircle2, ChevronDown, FileText, Gift, Hash, Headphones, ImageIcon, Layers3, LockKeyhole, Play, UserRound, Users, Video } from "lucide-react";
+import { ArrowLeft, Award, BookOpen, CalendarDays, Check, CheckCircle2, ChevronDown, FileText, Gift, Hash, Headphones, ImageIcon, Layers3, LockKeyhole, MessageSquareQuote, Play, UserRound, Users, Video } from "lucide-react";
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 
 const K2_SLUG = "k2-coaching-htg-2026";
 const K2_PREVIEW_IMAGE = "/images/tai-tran-coaching-k2-2026.jpg";
+const feedbackImages = [
+  {src:"/images/feedback/feedback-01.jpg",width:1600,height:633},
+  {src:"/images/feedback/feedback-02.jpg",width:1600,height:749},
+  {src:"/images/feedback/feedback-03.jpg",width:1600,height:456},
+  {src:"/images/feedback/feedback-04.jpg",width:1600,height:963},
+  {src:"/images/feedback/feedback-05.jpg",width:1419,height:1600},
+  {src:"/images/feedback/feedback-06.jpg",width:1600,height:1227},
+  {src:"/images/feedback/feedback-07.jpg",width:962,height:1600},
+  {src:"/images/feedback/feedback-08.jpg",width:1600,height:659},
+];
 
 export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata> {
   const {slug}=await params;
@@ -63,6 +73,7 @@ export default async function CourseDetail({params}:{params:Promise<{slug:string
           <div className="curriculum-list">{course.sections.map(s=><details className="curriculum-item" key={s.id} open={s.position===1}><summary><span className="section-number">{String(s.position).padStart(2,"0")}</span><div><small>Chương {s.position}</small><b>{s.title}</b></div><span className="section-lessons">{s.lessons.length} bài <ChevronDown size={16}/></span></summary><div className="lesson-list">{s.lessons.map(l=><div key={l.id}><span className="lesson-icon"><Play size={13}/></span><span className="lesson-title">{l.title}{l.isPreview&&<em>Học thử</em>}</span></div>)}</div></details>)}</div>
         </section>
         <section id="instructor" className="instructor-detail-card"><div className="instructor-detail-photo"><Image src={course.instructor.avatarUrl||"/images/tai-tran-portrait.jpg"} alt={course.instructor.name} fill sizes="200px" className="cover-image"/></div><div><p className="eyebrow">Giảng viên khóa học</p><h2>{course.instructor.name}</h2><b>{course.instructor.title}</b><p>{course.instructor.bio}</p></div></section>
+        <section className="course-feedback-section"><div className="feedback-heading"><span className="icon-box"><MessageSquareQuote/></span><div><p className="eyebrow">Phản hồi thực tế</p><h2>Học viên nói gì về HTG?</h2><p>Những chia sẻ từ học viên trong quá trình học tập và đồng hành cùng HTG.</p></div></div><div className="feedback-gallery">{feedbackImages.map((item,index)=><a href={item.src} target="_blank" rel="noopener noreferrer" className="feedback-item" key={item.src} aria-label={`Xem phản hồi học viên ${index+1}`}><Image src={item.src} width={item.width} height={item.height} sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw" alt={`Phản hồi học viên HTG ${index+1}`}/></a>)}</div></section>
       </article>
 
       <aside className="purchase-card"><p className="purchase-label">Thông tin khóa học</p><div className="purchase-price"><strong>Liên hệ</strong></div><div className="purchase-action course-zalo-actions"><a className="btn btn-primary course-zalo-button" href="https://zalo.me/0393835398" target="_blank" rel="noopener noreferrer">Zalo Hải Anh HTG</a><a className="btn btn-primary course-zalo-button" href="https://zalo.me/0971025264" target="_blank" rel="noopener noreferrer">Zalo Minh Hải HTG</a></div><p className="purchase-note">Chọn một trong hai tư vấn viên để được hỗ trợ về chương trình và lịch khai giảng.</p><div className="purchase-includes"><b>Khóa học bao gồm</b><span><LockKeyhole/>Truy cập nội dung trọn đời</span><span><BookOpen/>{lessons.length} bài học trực tuyến</span><span><FileText/>Tài liệu học tập đi kèm</span></div></aside>
