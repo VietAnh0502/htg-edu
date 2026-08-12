@@ -1,8 +1,40 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowLeft, BookOpen, Check, CheckCircle2, ChevronDown, FileText, Hash, ImageIcon, Layers3, LockKeyhole, Play, UserRound } from "lucide-react";
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
+
+const K2_SLUG = "k2-coaching-htg-2026";
+const K2_PREVIEW_IMAGE = "/images/tai-tran-coaching-k2-2026.jpg";
+
+export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata> {
+  const {slug}=await params;
+  const course=await db.course.findFirst({where:{slug,status:"PUBLISHED"},select:{title:true,shortDescription:true,thumbnailUrl:true}});
+  if(!course)return {};
+  const image=slug===K2_SLUG?K2_PREVIEW_IMAGE:course.thumbnailUrl;
+  const url=`/courses/${slug}`;
+  return {
+    title:course.title,
+    description:course.shortDescription,
+    alternates:{canonical:url},
+    openGraph:{
+      type:"website",
+      locale:"vi_VN",
+      url,
+      siteName:"HTG EDU",
+      title:course.title,
+      description:course.shortDescription,
+      images:image?[{url:image,width:2400,height:1350,alt:course.title}]:undefined,
+    },
+    twitter:{
+      card:"summary_large_image",
+      title:course.title,
+      description:course.shortDescription,
+      images:image?[image]:undefined,
+    },
+  };
+}
 
 export default async function CourseDetail({params}:{params:Promise<{slug:string}>}) {
   const {slug}=await params;

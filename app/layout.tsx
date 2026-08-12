@@ -6,7 +6,7 @@ import { Mail, MapPin, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/header";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://taitranhtg.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://htg-edu.vercel.app"),
   title: { default: "HTG EDU — Học đầu tư bài bản", template: "%s | HTG EDU" },
   description: "Nền tảng học tập trực tuyến dành cho nhà đầu tư với các khóa học có hệ thống và lộ trình ứng dụng thực tế.",
   openGraph: { title: "HTG EDU — Học đầu tư bài bản", description: "Nền tảng học tập trực tuyến dành cho nhà đầu tư.", type: "website", locale: "vi_VN" },
