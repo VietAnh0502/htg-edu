@@ -61,7 +61,7 @@ async function main() {
     create: { name: "Đầu tư chứng khoán", slug: "dau-tu-chung-khoan", description: "Tư duy, phương pháp và quản trị vốn cho nhà đầu tư Việt Nam" },
   });
   const existingInstructor = await db.instructor.findFirst({ where: { name: "Tài Trần" } });
-  const instructorData = { name: "Tài Trần", title: "Founder HTG · Chuyên gia đầu tư", bio: "Nhà đầu tư với 8 năm kinh nghiệm thực chiến, Top Traders of the Year 2020 và Nhân viên xuất sắc VPS 2024. Người xây dựng hệ thống đầu tư tỉnh thức HTG dành cho thị trường Việt Nam.", avatarUrl: "/images/tai-tran-portrait.jpg" };
+  const instructorData = { name: "Tài Trần", title: "Founder HTG · Chuyên gia đầu tư", bio: "Nhà đầu tư với 8 năm kinh nghiệm thực chiến, Top Traders of the Year 2020 và Nhân viên xuất sắc VPS 2024. Chuyên gia phân tích kinh tế, định lượng tại VPS, VND và SSI. Người xây dựng hệ thống đầu tư tỉnh thức HTG dành cho thị trường Việt Nam.", avatarUrl: "/images/tai-tran-portrait.jpg" };
   const instructor = existingInstructor ? await db.instructor.update({ where: { id: existingInstructor.id }, data: instructorData }) : await db.instructor.create({ data: instructorData });
 
   const existingCourse = await db.course.findFirst({ where: { OR: [{ slug: "coaching-htg-danh-song-k1-2026" }, { slug: "quan-ly-hieu-suat" }] } });
