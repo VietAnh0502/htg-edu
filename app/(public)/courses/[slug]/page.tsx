@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { ArrowLeft, Award, BookOpen, CalendarDays, Check, CheckCircle2, ChevronDown, FileText, Gift, Hash, Headphones, ImageIcon, Layers3, LockKeyhole, MessageSquareQuote, Play, UserRound, Users, Video } from "lucide-react";
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
+import { CourseDetailNav } from "@/components/course-detail-nav";
 
 const K2_SLUG = "k2-coaching-htg-2026";
 const K2_PREVIEW_IMAGE = "/images/tai-tran-coaching-k2-2026.jpg";
@@ -16,6 +17,7 @@ const feedbackImages = [
   {src:"/images/feedback/feedback-06.jpg",width:1600,height:1227},
   {src:"/images/feedback/feedback-07.jpg",width:962,height:1600},
   {src:"/images/feedback/feedback-08.jpg",width:1600,height:659},
+  {src:"/images/feedback/feedback-09.jpg",width:1059,height:1600},
 ];
 
 export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata> {
@@ -63,7 +65,7 @@ export default async function CourseDetail({params}:{params:Promise<{slug:string
 
     <div className="container detail-layout">
       <article className="detail-main">
-        <nav className="detail-tabs"><a href="#overview">Tổng quan</a><a href="#curriculum">Nội dung học</a><a href="#instructor">Giảng viên</a></nav>
+        <CourseDetailNav isK2={slug===K2_SLUG}/>
         <section id="overview" className="detail-block"><p className="eyebrow">Giới thiệu khóa học</p><h2>Bạn sẽ học được gì?</h2><div className="rich-copy">{course.description}</div>
           <div className="learn-outcomes"><div><CheckCircle2/><span><b>Kiến thức có hệ thống</b>Nội dung được sắp xếp theo trình tự dễ tiếp thu.</span></div><div><CheckCircle2/><span><b>Ứng dụng thực tế</b>Kết nối kiến thức với tình huống của nhà đầu tư.</span></div><div><CheckCircle2/><span><b>Xây dựng nguyên tắc</b>Từng bước hoàn thiện phương pháp và khả năng ra quyết định độc lập.</span></div></div>
         </section>
