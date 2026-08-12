@@ -1,0 +1,13 @@
+node_modules
+.next
+.env
+.env.local
+.env.*.local
+*.log
+*.tsbuildinfo
+.DS_Store
+coverage
+.vercel
+prisma/dev.db
+img/
+khoahoc/
