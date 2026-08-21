@@ -1,0 +1,1 @@
+import{PrismaClient}from"@prisma/client";const db=new PrismaClient();async function main(){const course=await db.course.update({where:{slug:"huong-dan-su-dung-bo-cong-cu-htg"},data:{status:"PUBLISHED",featured:true},select:{title:true}});console.log(`Đã đưa ${course.title} ra trang chủ.`)}main().finally(()=>db.$disconnect());

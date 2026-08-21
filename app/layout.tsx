@@ -12,8 +12,6 @@ export const metadata: Metadata = {
   openGraph: { title: "HTG EDU — Học đầu tư bài bản", description: "Nền tảng học tập trực tuyến dành cho nhà đầu tư.", type: "website", locale: "vi_VN" },
   twitter: { card: "summary", title: "HTG EDU — Học đầu tư bài bản", description: "Nền tảng học tập trực tuyến dành cho nhà đầu tư." },
 };
-export const dynamic = "force-dynamic";
-
 export default function RootLayout({children}:{children:React.ReactNode}) {
   return <html lang="vi"><body>
     <Header/>{children}
@@ -21,7 +19,7 @@ export default function RootLayout({children}:{children:React.ReactNode}) {
       <div className="container">
         <div className="footer-grid">
           <div className="footer-brand">
-            <Link href="/" className="brand footer-brand-link"><Image src="/images/htgedu-logo.png" alt="HTG EDU" width={68} height={68}/><span><b>HTG</b> EDU<small>Kiến thức tỉnh thức</small></span></Link>
+            <Link href="/" className="brand footer-brand-link"><Image src="/images/htgedu-logo.webp" alt="HTG EDU" width={68} height={68}/><span><b>HTG</b> EDU<small>Kiến thức tỉnh thức</small></span></Link>
             <p>Nền tảng đào tạo trực tuyến giúp nhà đầu tư học đúng kiến thức, theo đúng lộ trình và xây dựng năng lực ra quyết định độc lập.</p>
           </div>
           <div><b>Khám phá</b><p><Link href="/courses">Tất cả khóa học</Link></p><p><Link href="/#categories">Danh mục đào tạo</Link></p><p><Link href="/#instructors">Chuyên gia</Link></p></div>

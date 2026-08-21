@@ -1,0 +1,44 @@
+import"dotenv/config";import{PrismaClient}from"@prisma/client";import bcrypt from"bcryptjs";
+const db=new PrismaClient();const base=process.env.E2E_BASE_URL||"http://localhost:3001";const stamp=Date.now().toString().slice(-8);const studentEmail=`e2e.student.${stamp}@htgedu.local`;const adminEmail=`e2e.admin.${stamp}@htgedu.local`;const phone=`09${stamp}`;const password="E2ePassword123!";const newPassword="E2ePassword456!";let studentCookie="",adminCookie="";const created={studentId:"",adminId:"",orders:[],categoryId:"",instructorId:"",courseId:"",questionId:"",settingKey:`E2E_${stamp}`};const results=[];
+async function request(name,path,{method="GET",body,cookie,expect=200}={}){const r=await fetch(base+path,{method,headers:{...(body?{"content-type":"application/json"}:{}),...(cookie?{cookie}:{})},body:body?JSON.stringify(body):undefined,redirect:"manual"});let data=null;try{data=await r.json()}catch{}const ok=Array.isArray(expect)?expect.includes(r.status):r.status===expect;results.push({name,status:r.status,ok});if(!ok)throw new Error(`${name}: expected ${expect}, received ${r.status} ${JSON.stringify(data)}`);return{r,data,cookie:r.headers.get("set-cookie")?.split(";")[0]}}
+try{
+ await request("API chưa đăng nhập trả 401","/api/progress",{method:"POST",body:{lessonId:"invalid",completed:true},expect:401});
+ const reg=await request("Đăng ký học viên","/api/auth/register",{method:"POST",body:{name:"E2E Student",phone,email:studentEmail,password,confirmPassword:password},expect:201});created.studentId=reg.data.id;
+ await request("Từ chối mật khẩu sai","/api/auth/login",{method:"POST",body:{email:studentEmail,password:"WrongPassword!"},expect:401});
+ const login=await request("Đăng nhập học viên","/api/auth/login",{method:"POST",body:{email:studentEmail,password}});studentCookie=login.cookie;
+ await request("Đọc phiên đăng nhập","/api/auth/me",{cookie:studentCookie});
+ const forgot=await request("Yêu cầu quên mật khẩu","/api/auth/forgot-password",{method:"POST",body:{email:studentEmail}});const token=new URL(forgot.data.resetUrl,"http://local").searchParams.get("token");
+ await request("Đặt lại mật khẩu","/api/auth/reset-password",{method:"POST",body:{token,password:newPassword,confirmPassword:newPassword}});
+ const relogin=await request("Đăng nhập bằng mật khẩu mới","/api/auth/login",{method:"POST",body:{email:studentEmail,password:newPassword}});studentCookie=relogin.cookie;
+ await request("Đổi mật khẩu trong tài khoản","/api/auth/change-password",{method:"POST",cookie:studentCookie,body:{currentPassword:newPassword,newPassword:password}});const changedLogin=await request("Đăng nhập sau khi đổi mật khẩu","/api/auth/login",{method:"POST",body:{email:studentEmail,password}});studentCookie=changedLogin.cookie;
+ const admin=await db.user.create({data:{name:"E2E Admin",phone:`08${stamp}`,email:adminEmail,passwordHash:await bcrypt.hash(password,10),role:"ADMIN"}});created.adminId=admin.id;
+ const adminLogin=await request("Đăng nhập admin","/api/auth/login",{method:"POST",body:{email:adminEmail,password}});adminCookie=adminLogin.cookie;
+ await request("Chặn học viên gọi API admin","/api/admin/categories",{method:"POST",cookie:studentCookie,body:{name:"No",slug:"no"},expect:403});
+ const courses=await db.course.findMany({where:{status:"PUBLISHED"},orderBy:{createdAt:"asc"},select:{id:true,slug:true,sections:{select:{lessons:{select:{id:true}}}}}});const course=courses.find(c=>c.sections.flatMap(s=>s.lessons).length&&c.id);if(!course)throw new Error("Không có khóa học để test");
+ const order=await request("Tạo yêu cầu mở khóa","/api/orders",{method:"POST",cookie:studentCookie,body:{courseId:course.id},expect:201});created.orders.push(order.data.id);
+ await request("Đọc yêu cầu mở khóa",`/api/orders/${order.data.orderCode}`,{cookie:studentCookie});
+ await request("Trang checkout","/checkout/"+order.data.orderCode,{cookie:studentCookie});
+ await request("Admin xác nhận mở khóa",`/api/admin/orders/${order.data.id}/confirm`,{method:"POST",cookie:adminCookie});
+ await request("Kiểm tra quyền sở hữu khóa học",`/api/courses/${course.id}/access`,{cookie:studentCookie});await request("Trang tài khoản","/account",{cookie:studentCookie});
+ const otherCourse=courses.find(c=>c.id!==course.id);if(otherCourse){const cancelOrder=await request("Tạo yêu cầu để kiểm tra hủy","/api/orders",{method:"POST",cookie:studentCookie,body:{courseId:otherCourse.id},expect:201});created.orders.push(cancelOrder.data.id);await request("Admin hủy yêu cầu",`/api/admin/orders/${cancelOrder.data.id}/cancel`,{method:"POST",cookie:adminCookie})}
+ await request("Trang khóa học của tôi","/my-courses",{cookie:studentCookie});const lessons=course.sections.flatMap(s=>s.lessons);
+ await request("Cập nhật tiến độ bài học","/api/progress",{method:"POST",cookie:studentCookie,body:{lessonId:lessons[0].id,completed:true}});
+ if(lessons.length>1)await db.lessonProgress.createMany({data:lessons.slice(1).map(l=>({userId:created.studentId,lessonId:l.id,completed:true,completedAt:new Date()})),skipDuplicates:true});
+ await request("Trang học bài",`/learn/${course.slug}/${lessons[0].id}`,{cookie:studentCookie});
+ const attempt=await request("Bắt đầu thi cuối khóa","/api/exams/start",{method:"POST",cookie:studentCookie,body:{courseId:course.id},expect:[200,201]});
+ await request("Nộp bài thi",`/api/exams/${attempt.data.id}/submit`,{method:"POST",cookie:studentCookie,body:{answers:attempt.data.questions.map(q=>({questionId:q.question.id,selectedOption:"A"}))}});
+ await request("Trang thi",`/exam/${course.id}`,{cookie:studentCookie});
+ const category=await request("Admin tạo danh mục","/api/admin/categories",{method:"POST",cookie:adminCookie,body:{name:"E2E Category",slug:`e2e-${stamp}`,description:"Danh mục kiểm thử tự động"},expect:201});created.categoryId=category.data.id;
+ const instructor=await request("Admin tạo giảng viên","/api/admin/instructors",{method:"POST",cookie:adminCookie,body:{name:"E2E Instructor",title:"Tester",bio:"Giảng viên dùng cho kiểm thử tự động."},expect:201});created.instructorId=instructor.data.id;
+ const newCourse=await request("Admin tạo khóa học","/api/admin/courses",{method:"POST",cookie:adminCookie,body:{title:"E2E Course",slug:`e2e-course-${stamp}`,courseCode:`E2E-${stamp}`,shortDescription:"Khóa học dùng cho kiểm thử tự động.",description:"Nội dung khóa học dùng cho kiểm thử tự động.",targetAudience:"Người thực hiện kiểm thử",price:null,categoryId:created.categoryId,instructorId:created.instructorId,thumbnailUrl:null,status:"DRAFT",featured:false,examDurationMinutes:30,passingScore:70,maxAttempts:2},expect:201});created.courseId=newCourse.data.id;
+ await request("Admin cập nhật khóa học",`/api/admin/courses/${created.courseId}`,{method:"PATCH",cookie:adminCookie,body:{courseCode:`E2EX-${stamp}`,price:0,status:"PUBLISHED"}});
+ const freeOrder=await request("Đăng ký khóa học miễn phí","/api/orders",{method:"POST",cookie:studentCookie,body:{courseId:created.courseId},expect:201});created.orders.push(freeOrder.data.id);
+ const question=await request("Admin tạo câu hỏi","/api/admin/questions",{method:"POST",cookie:adminCookie,body:{courseId:created.courseId,content:"Câu hỏi kiểm thử có hoạt động không?",optionA:"Có",optionB:"Không",optionC:"Có thể",optionD:"Chưa rõ",correctOption:"A",difficulty:"EASY",status:"ACTIVE"},expect:201});created.questionId=question.data.id;
+ await request("Admin cập nhật câu hỏi",`/api/admin/questions/${created.questionId}`,{method:"PATCH",cookie:adminCookie,body:{status:"INACTIVE"}});
+ await request("Admin xóa câu hỏi",`/api/admin/questions/${created.questionId}`,{method:"DELETE",cookie:adminCookie});created.questionId="";
+ await request("Admin lưu cài đặt","/api/admin/settings",{method:"PUT",cookie:adminCookie,body:{key:created.settingKey,value:"ok",isSecret:false}});
+ await request("Trang dashboard admin","/admin",{cookie:adminCookie});await request("Chặn học viên vào admin","/admin",{cookie:studentCookie,expect:307});await request("Đăng xuất","/api/auth/logout",{method:"POST",cookie:studentCookie});
+ console.table(results);
+}finally{
+ if(created.questionId)await db.question.deleteMany({where:{id:created.questionId}});if(created.orders.length){await db.auditLog.deleteMany({where:{entity:"Order",entityId:{in:created.orders}}});await db.order.deleteMany({where:{id:{in:created.orders}}})}if(created.courseId)await db.course.deleteMany({where:{id:created.courseId}});if(created.categoryId)await db.category.deleteMany({where:{id:created.categoryId}});if(created.instructorId)await db.instructor.deleteMany({where:{id:created.instructorId}});await db.systemSetting.deleteMany({where:{key:created.settingKey}});if(created.studentId||created.adminId)await db.user.deleteMany({where:{id:{in:[created.studentId,created.adminId].filter(Boolean)}}});await db.$disconnect();
+}

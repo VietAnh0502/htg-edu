@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-const schema = z.object({ name: z.string().trim().min(2).max(100), phone: z.string().regex(/^(0|\+84)[0-9]{9,10}$/), email: z.string().email().transform(v => v.toLowerCase()), password: z.string().min(8).max(72), confirmPassword: z.string() }).refine(v => v.password === v.confirmPassword, { message: "Mật khẩu xác nhận không khớp", path: ["confirmPassword"] });
+const schema = z.object({ name: z.string().trim().min(2).max(100), phone: z.string().trim().regex(/^(0[0-9]{9}|\+84[0-9]{9})$/).transform(v=>v.startsWith("+84")?`0${v.slice(3)}`:v), email: z.string().trim().email().transform(v => v.toLowerCase()), password: z.string().min(8).max(72), confirmPassword: z.string() }).refine(v => v.password === v.confirmPassword, { message: "Mật khẩu xác nhận không khớp", path: ["confirmPassword"] });
 export async function POST(req: Request) { try {
   if (!rateLimit(`register:${clientIp(req)}`, 5, 900_000)) fail(429, "Vui lòng thử lại sau");
   const data = schema.parse(await req.json());

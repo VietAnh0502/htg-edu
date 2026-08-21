@@ -1,3 +1,2 @@
-import { requireAdmin } from "@/lib/auth"; import { db } from "@/lib/db"; import { apiError } from "@/lib/http"; import { NextResponse } from "next/server"; import { z } from "zod";
-const question=z.object({courseId:z.string().cuid(),content:z.string().min(5),optionA:z.string().min(1),optionB:z.string().min(1),optionC:z.string().min(1),optionD:z.string().min(1),correctOption:z.enum(["A","B","C","D"]),explanation:z.string().optional(),difficulty:z.enum(["EASY","MEDIUM","HARD"]).default("MEDIUM"),status:z.enum(["ACTIVE","INACTIVE"]).default("ACTIVE")});
-export async function POST(req:Request){try{await requireAdmin();const data=question.parse(await req.json());return NextResponse.json(await db.question.create({data}),{status:201})}catch(e){return apiError(e)}}
+import{requireApiAdmin}from"@/lib/auth";import{db}from"@/lib/db";import{apiError}from"@/lib/http";import{questionSchema}from"@/lib/validation";import{NextResponse}from"next/server";
+export async function POST(req:Request){try{await requireApiAdmin();return NextResponse.json(await db.question.create({data:questionSchema.parse(await req.json())}),{status:201})}catch(e){return apiError(e)}}

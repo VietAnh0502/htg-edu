@@ -5,10 +5,11 @@ import { db } from "@/lib/db";
 import { CourseCard } from "@/components/course-card";
 
 const categoryIcons = [TrendingUp, LineChart, BarChart3, Target, BookOpen, Layers3];
+export const revalidate=300;
 
 export default async function Home() {
   const [courses,categories,instructor,studentCount]=await Promise.all([
-    db.course.findMany({where:{status:"PUBLISHED"},orderBy:[{featured:"desc"},{createdAt:"desc"}],take:6,include:{category:true,instructor:true,sections:{include:{lessons:{select:{durationSeconds:true}}}}}}),
+    db.course.findMany({where:{status:"PUBLISHED"},orderBy:[{featured:"desc"},{createdAt:"desc"}],take:6,select:{id:true,title:true,slug:true,courseCode:true,shortDescription:true,thumbnailUrl:true,price:true,featured:true,category:{select:{name:true}},instructor:{select:{name:true}},sections:{select:{lessons:{select:{durationSeconds:true}}}}}}),
     db.category.findMany({include:{_count:{select:{courses:{where:{status:"PUBLISHED"}}}}},orderBy:{createdAt:"asc"},take:6}),
     db.instructor.findFirst({where:{name:{contains:"Tài"}},orderBy:{createdAt:"asc"}}),
     db.user.count({where:{role:"STUDENT"}}),
@@ -32,7 +33,7 @@ export default async function Home() {
             <div className="hero-course-top"><span>{featured.category.name}</span><small>Khóa học nổi bật</small></div>
             <h2>{featured.title}</h2>
             <div className="hero-course-meta"><span><BookOpen size={14}/>{featuredLessons.length} bài học</span><span><UserRound size={14}/>{featured.instructor.name}</span></div>
-            <div className="hero-course-bottom"><strong>Liên hệ</strong><span>Xem khóa học <ArrowRight size={16}/></span></div>
+            <div className="hero-course-bottom"><strong>{featured.price!==null&&Number(featured.price)===0?"Miễn phí · Cần học K2":"Liên hệ"}</strong><span>Xem khóa học <ArrowRight size={16}/></span></div>
           </div>
         </Link>:<div className="hero-empty-card"><GraduationCap size={52}/><b>Khóa học mới sắp ra mắt</b></div>}
       </div>

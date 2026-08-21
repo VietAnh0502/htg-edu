@@ -1,5 +1,3 @@
-import { redirect } from "next/navigation";
-
-export default function Exam() {
-  redirect("/courses");
-}
+import{Award}from"lucide-react";import{notFound,redirect}from"next/navigation";import{requireUser}from"@/lib/auth";import{canAccessCourse}from"@/lib/access";import{db}from"@/lib/db";import{ExamClient}from"@/components/exam-client";
+export const metadata={title:"Thi cuối khóa"};
+export default async function Exam({params}:{params:Promise<{courseId:string}>}){const user=await requireUser();const{courseId}=await params;const course=await db.course.findUnique({where:{id:courseId},select:{id:true,title:true,slug:true,passingScore:true,maxAttempts:true,_count:{select:{questions:{where:{status:"ACTIVE"}}}}}});if(!course)notFound();if(!(await canAccessCourse(user.id,course.id,user.role==="ADMIN")))redirect(`/courses/${course.slug}`);const attempts=await db.examAttempt.count({where:{userId:user.id,courseId}});return <main className="app-shell exam-page"><section className="page-hero"><div className="container"><p className="eyebrow" style={{color:"#6ee7b7"}}>Đánh giá cuối khóa</p><h1>{course.title}</h1><p style={{color:"#b8d2c8"}}>Chỉ cần sở hữu khóa học là có thể tham gia · Điểm đạt {course.passingScore}/100 · Tối đa {course.maxAttempts} lần thi.</p></div></section><section className="section"><div className="container"><div className="card exam-card"><span className="icon-box"><Award/></span><h2>Bài thi cuối khóa</h2><p className="muted">Đã dùng {attempts}/{course.maxAttempts} lần thi · Ngân hàng {course._count.questions} câu hỏi.</p>{course._count.questions>0?<ExamClient courseId={course.id}/>:<p className="form-error">Khóa học này chưa có câu hỏi trắc nghiệm.</p>}</div></div></section></main>}

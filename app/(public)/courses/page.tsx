@@ -4,10 +4,11 @@ import { db } from "@/lib/db";
 import { CourseCard } from "@/components/course-card";
 
 export const metadata={title:"Thư viện khóa học"};
+export const revalidate=300;
 export default async function Courses({searchParams}:{searchParams:Promise<{q?:string;category?:string;sort?:string}>}) {
   const p=await searchParams;
   const [courses,categories]=await Promise.all([
-    db.course.findMany({where:{status:"PUBLISHED",...(p.q?{OR:[{title:{contains:p.q,mode:"insensitive"}},{shortDescription:{contains:p.q,mode:"insensitive"}}]}:{}),...(p.category?{category:{slug:p.category}}:{})},orderBy:[{featured:"desc"},{createdAt:"desc"}],include:{category:true,instructor:true,sections:{include:{lessons:{select:{durationSeconds:true}}}}}}),
+    db.course.findMany({where:{status:"PUBLISHED",...(p.q?{OR:[{title:{contains:p.q,mode:"insensitive"}},{shortDescription:{contains:p.q,mode:"insensitive"}}]}:{}),...(p.category?{category:{slug:p.category}}:{})},orderBy:[{featured:"desc"},{createdAt:"desc"}],take:100,select:{id:true,title:true,slug:true,courseCode:true,shortDescription:true,thumbnailUrl:true,price:true,featured:true,category:{select:{name:true}},instructor:{select:{name:true}},sections:{select:{lessons:{select:{durationSeconds:true}}}}}}),
     db.category.findMany({orderBy:{name:"asc"}})
   ]);
   const activeCategory=categories.find(c=>c.slug===p.category);

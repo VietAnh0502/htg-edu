@@ -10,6 +10,13 @@ LMS production-ready xây bằng Next.js App Router, TypeScript, PostgreSQL và 
 4. Chỉ khi cần dữ liệu khởi đầu: `SEED_ADMIN_PASSWORD='mật-khẩu-an-toàn' npm run db:seed`. Hãy đổi email/số điện thoại quản trị sau lần đăng nhập đầu tiên.
 5. `npm run dev`
 
+## Kiểm thử
+
+- `npm run typecheck`: kiểm tra TypeScript.
+- `npm run build`: build production.
+- Khi server local đang chạy, dùng `E2E_BASE_URL=http://localhost:3000 npm run test:e2e` để kiểm tra đăng ký, đăng nhập, đặt lại/đổi mật khẩu, đơn hàng, mở khóa, tiến độ, thi và API quản trị. Bộ test tự tạo rồi dọn dữ liệu thử nghiệm.
+- Đặt lại mật khẩu một tài khoản quản trị mà không chạy lại seed: `RESET_USER_EMAIL='admin@example.com' RESET_USER_PASSWORD='mat-khau-moi-an-toan' npm run user:reset-password`.
+
 Không chạy seed trên dữ liệu thật nếu không muốn tạo khóa học mẫu. File/video được lưu tại object storage hoặc nền tảng video, database chỉ giữ URL.
 
 ## Deploy Vercel
@@ -22,4 +29,4 @@ Không chạy seed trên dữ liệu thật nếu không muốn tạo khóa họ
 
 ## Vận hành
 
-Rate limit trong bộ nhớ phù hợp local/single instance. Production serverless nên thay `lib/rate-limit.ts` bằng Redis/KV (Upstash/Vercel KV). Tích hợp SMTP tại API quên mật khẩu trước khi mở cho người dùng thật. Thông tin bí mật chỉ đặt trong Environment Variables hoặc secret manager, không commit vào Git.
+Rate limit trong bộ nhớ phù hợp local/single instance. Production serverless nên thay `lib/rate-limit.ts` bằng Redis/KV (Upstash/Vercel KV). Luồng đặt lại mật khẩu hoạt động đầy đủ; cần kết nối SMTP để gửi liên kết trong production. Thông tin bí mật chỉ đặt trong Environment Variables hoặc secret manager, không commit vào Git. Nếu bí mật từng bị commit, phải xoay vòng ngay cả khi sau đó đã xóa khỏi file.

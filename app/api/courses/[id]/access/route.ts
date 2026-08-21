@@ -1,0 +1,2 @@
+import{getCurrentUser}from"@/lib/auth";import{canAccessCourse}from"@/lib/access";import{apiError}from"@/lib/http";import{NextResponse}from"next/server";
+export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){try{const user=await getCurrentUser();if(!user)return NextResponse.json({loggedIn:false,owned:false});const{id}=await params;return NextResponse.json({loggedIn:true,owned:await canAccessCourse(user.id,id,user.role==="ADMIN")},{headers:{"Cache-Control":"private, no-store"}})}catch(e){return apiError(e)}}
