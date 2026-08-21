@@ -11,3 +11,6 @@ coverage
 prisma/dev.db
 img/
 khoahoc/
+!khoahoc/
+khoahoc/*
+!khoahoc/*.pdf

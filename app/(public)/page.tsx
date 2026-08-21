@@ -5,15 +5,16 @@ import { db } from "@/lib/db";
 import { CourseCard } from "@/components/course-card";
 
 const categoryIcons = [TrendingUp, LineChart, BarChart3, Target, BookOpen, Layers3];
-export const revalidate=300;
+// These pages depend on the live database. Rendering them during `next build`
+// makes deployments fail whenever the hosted database connection pool is busy.
+export const dynamic="force-dynamic";
 
 export default async function Home() {
-  const [courses,categories,instructor,studentCount]=await Promise.all([
-    db.course.findMany({where:{status:"PUBLISHED"},orderBy:[{featured:"desc"},{createdAt:"desc"}],take:6,select:{id:true,title:true,slug:true,courseCode:true,shortDescription:true,thumbnailUrl:true,price:true,featured:true,category:{select:{name:true}},instructor:{select:{name:true}},sections:{select:{lessons:{select:{durationSeconds:true}}}}}}),
-    db.category.findMany({include:{_count:{select:{courses:{where:{status:"PUBLISHED"}}}}},orderBy:{createdAt:"asc"},take:6}),
-    db.instructor.findFirst({where:{name:{contains:"Tài"}},orderBy:{createdAt:"asc"}}),
-    db.user.count({where:{role:"STUDENT"}}),
-  ]);
+  // Keep query concurrency low for providers with a small session pool.
+  const courses=await db.course.findMany({where:{status:"PUBLISHED"},orderBy:[{featured:"desc"},{createdAt:"desc"}],take:6,select:{id:true,title:true,slug:true,courseCode:true,shortDescription:true,thumbnailUrl:true,price:true,featured:true,category:{select:{name:true}},instructor:{select:{name:true}},sections:{select:{lessons:{select:{durationSeconds:true}}}}}});
+  const categories=await db.category.findMany({include:{_count:{select:{courses:{where:{status:"PUBLISHED"}}}}},orderBy:{createdAt:"asc"},take:6});
+  const instructor=await db.instructor.findFirst({where:{name:{contains:"Tài"}},orderBy:{createdAt:"asc"}});
+  const studentCount=await db.user.count({where:{role:"STUDENT"}});
   const featured=courses[0];
   const featuredLessons=featured?.sections.flatMap(s=>s.lessons)??[];
 
