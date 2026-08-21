@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { CourseCard } from "@/components/course-card";
 
 export const metadata={title:"Thư viện khóa học"};
-export const dynamic="force-dynamic";
+export const revalidate=300;
 export default async function Courses({searchParams}:{searchParams:Promise<{q?:string;category?:string;sort?:string}>}) {
   const p=await searchParams;
   const [courses,categories]=await Promise.all([
