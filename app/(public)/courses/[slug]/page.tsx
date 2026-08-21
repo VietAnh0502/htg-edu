@@ -9,7 +9,7 @@ import { CourseAction } from "@/components/course-action";
 
 const K2_SLUG = "k2-coaching-htg-2026";
 const TOOLS_SLUG = "huong-dan-su-dung-bo-cong-cu-htg";
-export const revalidate=300;
+export const dynamic="force-dynamic";
 const K2_PREVIEW_IMAGE = "/images/tai-tran-coaching-k2-2026.jpg";
 const feedbackImages = [
   {src:"/images/feedback/feedback-01.jpg",width:1600,height:633},
