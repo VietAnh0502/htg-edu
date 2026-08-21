@@ -1,10 +1,8 @@
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { Readable } from "node:stream";
-import { canAccessCourse } from "@/lib/access";
-import { requireApiUser } from "@/lib/auth";
 import { protectedPdfPath } from "@/lib/course-content";
-import { db } from "@/lib/db";
+import { verifyDocumentToken } from "@/lib/document-token";
 import { apiError, fail } from "@/lib/http";
 import { NextResponse } from "next/server";
 
@@ -65,15 +63,13 @@ function pdfChunk(filePath: string, size: number, start: number, requestedEnd: n
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await requireApiUser();
     const { id } = await params;
-    const course = await db.course.findUnique({ where: { id }, select: { id: true, slug: true } });
-    if (!course) fail(404, "Không tìm thấy khóa học");
-    if (!(await canAccessCourse(user.id, course.id, user.role === "ADMIN"))) {
-      fail(403, "Khóa học chưa được Admin mở quyền");
-    }
+    const authorization = request.headers.get("authorization");
+    if (!authorization?.startsWith("Bearer ")) fail(401, "Thiếu phiên tải tài liệu");
+    const documentAccess = await verifyDocumentToken(authorization.slice(7));
+    if (documentAccess.courseId !== id) fail(403, "Phiên tải tài liệu không đúng khóa học");
 
-    const filePath = protectedPdfPath(course.slug);
+    const filePath = protectedPdfPath(documentAccess.slug);
     if (!filePath) fail(404, "Khóa học chưa có tài liệu PDF");
     const { size } = await stat(filePath);
     const rangeHeader = request.headers.get("range");

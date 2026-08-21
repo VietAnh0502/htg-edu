@@ -23,7 +23,7 @@ function parseContentRange(value: string | null) {
   return { start: Number(match[1]), end: Number(match[2]), total: Number(match[3]) };
 }
 
-export function ProtectedPdfViewer({ courseId, title }: { courseId: string; title: string }) {
+export function ProtectedPdfViewer({ courseId, title, documentToken }: { courseId: string; title: string; documentToken: string }) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export function ProtectedPdfViewer({ courseId, title }: { courseId: string; titl
       try {
         const endpoint = `/api/courses/${courseId}/document`;
         const firstResponse = await fetch(endpoint, {
-          headers: { Range: `bytes=0-${CHUNK_SIZE - 1}` },
+          headers: { Range: `bytes=0-${CHUNK_SIZE - 1}`, Authorization: `Bearer ${documentToken}` },
           cache: "no-store",
           signal: controller.signal,
         });
@@ -75,7 +75,7 @@ export function ProtectedPdfViewer({ courseId, title }: { courseId: string; titl
           const batch = ranges.slice(offset, offset + CONCURRENT_REQUESTS);
           await Promise.all(batch.map(async ({ start, end, index }) => {
             const response = await fetch(endpoint, {
-              headers: { Range: `bytes=${start}-${end}` },
+              headers: { Range: `bytes=${start}-${end}`, Authorization: `Bearer ${documentToken}` },
               cache: "no-store",
               signal: controller.signal,
             });
@@ -111,7 +111,7 @@ export function ProtectedPdfViewer({ courseId, title }: { courseId: string; titl
       controller.abort();
       if (generatedUrl) URL.revokeObjectURL(generatedUrl);
     };
-  }, [attempt, courseId]);
+  }, [attempt, courseId, documentToken]);
 
   if (error) return <div className="pdf-viewer-status pdf-viewer-error"><AlertCircle/><b>Không tải được giáo trình</b><p>{error}</p><button type="button" onClick={() => setAttempt(value => value + 1)}><RotateCcw size={16}/> Thử lại</button></div>;
   if (!objectUrl) return <div className="pdf-viewer-status"><LoaderCircle className="pdf-loading-icon"/><b>Đang chuẩn bị giáo trình</b><p>Đã tải {progress}% · Vui lòng giữ trang này mở</p><div className="pdf-loading-track"><span style={{ width: `${progress}%` }}/></div></div>;
