@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/[[...path]]": ["./khoahoc/*.pdf"],
   },
+  async rewrites() {
+    return [
+      { source: "/account", destination: "/student/account" },
+      { source: "/my-courses", destination: "/student/my-courses" },
+      { source: "/checkout/:orderCode", destination: "/student/checkout/:orderCode" },
+      { source: "/exam-results/:attemptId", destination: "/student/exam-results/:attemptId" },
+      { source: "/exam/:courseId", destination: "/student/exam/:courseId" },
+      { source: "/learn/:courseSlug/:lessonId", destination: "/student/learn/:courseSlug/:lessonId" },
+    ];
+  },
   async headers() {
     return [{ source: "/(.*)", headers: [
       { key: "X-Content-Type-Options", value: "nosniff" },
