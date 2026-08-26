@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   images: { remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }] },
   poweredByHeader: false,
   outputFileTracingIncludes: {
-    "/api/courses/[id]/document": ["./khoahoc/*.pdf"],
+    "/api/[[...path]]": ["./khoahoc/*.pdf"],
   },
   async headers() {
     return [{ source: "/(.*)", headers: [
