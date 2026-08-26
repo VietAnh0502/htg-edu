@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { CourseDetailNav } from "@/components/course-detail-nav";
 import { CourseAction } from "@/components/course-action";
-import { getProtectedCourseContent } from "@/lib/course-content";
+import { getCourseMajorSectionCount, getProtectedCourseContent } from "@/lib/course-content";
 
 const K2_SLUG = "k2-coaching-htg-2026";
 const TOOLS_SLUG = "huong-dan-su-dung-bo-cong-cu-htg";
@@ -58,15 +58,17 @@ export default async function CourseDetail({params,searchParams}:{params:Promise
   const course=await db.course.findFirst({where:{slug,status:"PUBLISHED"},include:{category:true,instructor:true,sections:{orderBy:{position:"asc"},include:{lessons:{orderBy:{position:"asc"}}}}}});
   if(!course)notFound();
   const lessons=course.sections.flatMap(s=>s.lessons);
-  const curriculum=getProtectedCourseContent(slug)?.curriculum;
-  const sectionCount=curriculum?.length??course.sections.length;
+  const protectedContent=getProtectedCourseContent(slug);
+  const curriculum=protectedContent?.curriculum;
+  const sessionCount=protectedContent?.sessions.length??lessons.length;
+  const sectionCount=getCourseMajorSectionCount(slug,course.sections.length);
   const lessonCount=curriculum?.reduce((total,section)=>total+section.items.length,0)??lessons.length;
 
   return <main className="app-shell course-detail-page">
     <section className="detail-hero"><div className="container">
       <Link href="/courses" className="back-link"><ArrowLeft size={16}/> Quay lại thư viện</Link>
       <div className="detail-hero-grid">
-        <div className="detail-hero-content"><span className="detail-category">{course.category.name}</span><h1>{course.title}</h1><p>{course.shortDescription}</p><div className="detail-meta">{course.courseCode&&<span><Hash/>{course.courseCode}</span>}<span><UserRound/>{course.instructor.name}</span><span><Layers3/>{sectionCount} chương</span><span><BookOpen/>{lessonCount} mục tài liệu</span></div></div>
+        <div className="detail-hero-content"><span className="detail-category">{course.category.name}</span><h1>{course.title}</h1><p>{course.shortDescription}</p><div className="detail-meta">{course.courseCode&&<span><Hash/>{course.courseCode}</span>}<span><UserRound/>{course.instructor.name}</span><span><Layers3/>{sectionCount} tài liệu</span><span><BookOpen/>{sessionCount} buổi học</span></div></div>
         <div className="detail-thumbnail">{course.thumbnailUrl?<Image src={course.thumbnailUrl} alt={course.title} fill priority sizes="(max-width: 900px) 92vw, 44vw" className="cover-image"/>:<span><ImageIcon size={48}/>Ảnh khóa học đang cập nhật</span>}</div>
       </div>
     </div></section>
@@ -87,7 +89,7 @@ export default async function CourseDetail({params,searchParams}:{params:Promise
         <section className="course-feedback-section"><div className="feedback-heading"><span className="icon-box"><MessageSquareQuote/></span><div><p className="eyebrow">Phản hồi thực tế</p><h2>Học viên nói gì về HTG?</h2><p>Những chia sẻ từ học viên trong quá trình học tập và đồng hành cùng HTG.</p></div></div><div className="feedback-gallery">{feedbackImages.map((item,index)=><a href={item.src} target="_blank" rel="noopener noreferrer" className="feedback-item" key={item.src} aria-label={`Xem phản hồi học viên ${index+1}`}><Image src={item.src} width={item.width} height={item.height} sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw" alt={`Phản hồi học viên HTG ${index+1}`}/></a>)}</div></section>
       </article>
 
-      <aside className="purchase-card"><p className="purchase-label">Thông tin khóa học</p><div className="purchase-price"><strong>{slug===TOOLS_SLUG?"Miễn phí":"Liên hệ"}</strong></div><CourseAction courseId={course.id} free={slug===TOOLS_SLUG}/><div className="purchase-action course-zalo-actions"><a className="btn btn-outline course-zalo-button" href="https://zalo.me/0393835398" target="_blank" rel="noopener noreferrer">Zalo Hải Anh HTG</a><a className="btn btn-outline course-zalo-button" href="https://zalo.me/0971025264" target="_blank" rel="noopener noreferrer">Zalo Minh Hải HTG</a></div><p className="purchase-note">{slug===TOOLS_SLUG?"Tự động mở miễn phí cho học viên đã được mở khóa K2.":"Gửi yêu cầu để Admin mở khóa, sau đó chọn một tư vấn viên nếu cần hỗ trợ."}</p><div className="purchase-includes"><b>Khóa học bao gồm</b><span><LockKeyhole/>Truy cập nội dung trọn đời</span><span><BookOpen/>{lessonCount} mục trong tài liệu</span><span>{slug===TOOLS_SLUG?<><Video/>Video hướng dẫn và 2 tài liệu PDF</>:<><FileText/>Tài liệu học tập đi kèm</>}</span></div></aside>
+      <aside className="purchase-card"><p className="purchase-label">Thông tin khóa học</p><div className="purchase-price"><strong>{slug===TOOLS_SLUG?"Miễn phí":"Liên hệ"}</strong></div><CourseAction courseId={course.id} free={slug===TOOLS_SLUG}/><div className="purchase-action course-zalo-actions"><a className="btn btn-outline course-zalo-button" href="https://zalo.me/0393835398" target="_blank" rel="noopener noreferrer">Zalo Hải Anh HTG</a><a className="btn btn-outline course-zalo-button" href="https://zalo.me/0971025264" target="_blank" rel="noopener noreferrer">Zalo Minh Hải HTG</a></div><p className="purchase-note">{slug===TOOLS_SLUG?"Tự động mở miễn phí cho học viên đã được mở khóa K2.":"Gửi yêu cầu để Admin mở khóa, sau đó chọn một tư vấn viên nếu cần hỗ trợ."}</p><div className="purchase-includes"><b>Khóa học bao gồm</b><span><LockKeyhole/>Truy cập nội dung trọn đời</span><span><BookOpen/>{sessionCount} buổi học</span><span>{slug===TOOLS_SLUG?<><Video/>Video hướng dẫn và 3 tài liệu PDF</>:<><FileText/>Tài liệu học tập đi kèm</>}</span></div></aside>
     </div>
   </main>;
 }
