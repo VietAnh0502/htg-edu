@@ -69,7 +69,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const documentAccess = await verifyDocumentToken(authorization.slice(7));
     if (documentAccess.courseId !== id) fail(403, "Phiên tải tài liệu không đúng khóa học");
 
-    const filePath = protectedPdfPath(documentAccess.slug);
+    const rawDocumentIndex = new URL(request.url).searchParams.get("document") ?? "0";
+    const documentIndex = Number(rawDocumentIndex);
+    if (!/^\d+$/.test(rawDocumentIndex) || !Number.isSafeInteger(documentIndex)) fail(400, "Tài liệu không hợp lệ");
+    const filePath = protectedPdfPath(documentAccess.slug, documentIndex);
     if (!filePath) fail(404, "Khóa học chưa có tài liệu PDF");
     const { size } = await stat(filePath);
     const rangeHeader = request.headers.get("range");
