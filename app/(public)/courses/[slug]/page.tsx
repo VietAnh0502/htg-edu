@@ -52,9 +52,8 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
   };
 }
 
-export default async function CourseDetail({params,searchParams}:{params:Promise<{slug:string}>;searchParams:Promise<{required?:string}>}) {
+export default async function CourseDetail({params}:{params:Promise<{slug:string}>}) {
   const {slug}=await params;
-  const query=await searchParams;
   const course=await getPublishedCourse(slug);
   if(!course)notFound();
   const lessons=course.sections.flatMap(s=>s.lessons);
@@ -75,7 +74,6 @@ export default async function CourseDetail({params,searchParams}:{params:Promise
 
     <div className="container detail-layout">
       <article className="detail-main">
-        {slug===K2_SLUG&&query.required==="tools"&&<div className="course-requirement-alert"><LockKeyhole/><div><b>Cần mở khóa K2 trước</b><p>Khóa hướng dẫn Bộ công cụ HTG được tặng miễn phí và sẽ tự động mở ngay sau khi tài khoản của bạn được cấp quyền học K2.</p></div></div>}
         <CourseDetailNav isK2={slug===K2_SLUG}/>
         <section id="overview" className="detail-block"><p className="eyebrow">Giới thiệu khóa học</p><h2>Bạn sẽ học được gì?</h2><div className="rich-copy">{course.description}</div>
           <div className="learn-outcomes"><div><CheckCircle2/><span><b>Kiến thức có hệ thống</b>Nội dung được sắp xếp theo trình tự dễ tiếp thu.</span></div><div><CheckCircle2/><span><b>Ứng dụng thực tế</b>Kết nối kiến thức với tình huống của nhà đầu tư.</span></div><div><CheckCircle2/><span><b>Xây dựng nguyên tắc</b>Từng bước hoàn thiện phương pháp và khả năng ra quyết định độc lập.</span></div></div>
@@ -89,7 +87,7 @@ export default async function CourseDetail({params,searchParams}:{params:Promise
         <section className="course-feedback-section"><div className="feedback-heading"><span className="icon-box"><MessageSquareQuote/></span><div><p className="eyebrow">Phản hồi thực tế</p><h2>Học viên nói gì về HTG?</h2><p>Những chia sẻ từ học viên trong quá trình học tập và đồng hành cùng HTG.</p></div></div><div className="feedback-gallery">{feedbackImages.map((item,index)=><a href={item.src} target="_blank" rel="noopener noreferrer" className="feedback-item" key={item.src} aria-label={`Xem phản hồi học viên ${index+1}`}><Image src={item.src} width={item.width} height={item.height} sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw" alt={`Phản hồi học viên HTG ${index+1}`}/></a>)}</div></section>
       </article>
 
-      <aside className="purchase-card"><p className="purchase-label">Thông tin khóa học</p><div className="purchase-price"><strong>{slug===TOOLS_SLUG?"Miễn phí":"Liên hệ"}</strong></div><CourseAction courseId={course.id} free={slug===TOOLS_SLUG}/><div className="purchase-action course-zalo-actions"><a className="btn btn-outline course-zalo-button" href="https://zalo.me/0393835398" target="_blank" rel="noopener noreferrer">Zalo Hải Anh HTG</a><a className="btn btn-outline course-zalo-button" href="https://zalo.me/0971025264" target="_blank" rel="noopener noreferrer">Zalo Minh Hải HTG</a></div><p className="purchase-note">{slug===TOOLS_SLUG?"Tự động mở miễn phí cho học viên đã được mở khóa K2.":"Gửi yêu cầu để Admin mở khóa, sau đó chọn một tư vấn viên nếu cần hỗ trợ."}</p><div className="purchase-includes"><b>Khóa học bao gồm</b><span><LockKeyhole/>Truy cập nội dung trọn đời</span><span><BookOpen/>{sessionCount} buổi học</span><span>{slug===TOOLS_SLUG?<><Video/>Video hướng dẫn và 3 tài liệu PDF</>:<><FileText/>Tài liệu học tập đi kèm</>}</span></div></aside>
+      <aside className="purchase-card"><p className="purchase-label">Thông tin khóa học</p><div className="purchase-price"><strong>{slug===TOOLS_SLUG?"Admin cấp quyền":"Liên hệ"}</strong></div><CourseAction courseId={course.id}/><div className="purchase-action course-zalo-actions"><a className="btn btn-outline course-zalo-button" href="https://zalo.me/0393835398" target="_blank" rel="noopener noreferrer">Zalo Hải Anh HTG</a><a className="btn btn-outline course-zalo-button" href="https://zalo.me/0971025264" target="_blank" rel="noopener noreferrer">Zalo Minh Hải HTG</a></div><p className="purchase-note">Gửi yêu cầu để Admin mở đúng khóa học này, sau đó chọn một tư vấn viên nếu cần hỗ trợ.</p><div className="purchase-includes"><b>Khóa học bao gồm</b><span><LockKeyhole/>Truy cập nội dung trọn đời</span><span><BookOpen/>{sessionCount} buổi học</span><span>{slug===TOOLS_SLUG?<><Video/>Video hướng dẫn và 3 tài liệu PDF</>:<><FileText/>Tài liệu học tập đi kèm</>}</span></div></aside>
     </div>
   </main>;
 }

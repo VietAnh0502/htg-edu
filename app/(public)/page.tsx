@@ -33,7 +33,7 @@ export default async function Home() {
             <div className="hero-course-top"><span>{featured.category.name}</span><small>Khóa học nổi bật</small></div>
             <h2>{featured.title}</h2>
             <div className="hero-course-meta"><span><BookOpen size={14}/>{featuredChapterCount} chương</span><span><UserRound size={14}/>{featured.instructor.name}</span></div>
-            <div className="hero-course-bottom"><strong>{featured.price!==null&&Number(featured.price)===0?"Miễn phí · Cần học K2":"Liên hệ"}</strong><span>Xem khóa học <ArrowRight size={16}/></span></div>
+            <div className="hero-course-bottom"><strong>{featured.slug==="huong-dan-su-dung-bo-cong-cu-htg"?"Admin cấp quyền":featured.price!==null&&Number(featured.price)===0?"Miễn phí":"Liên hệ"}</strong><span>Xem khóa học <ArrowRight size={16}/></span></div>
           </div>
         </Link>:<div className="hero-empty-card"><GraduationCap size={52}/><b>Khóa học mới sắp ra mắt</b></div>}
       </div>
