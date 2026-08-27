@@ -2,11 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowLeft, Award, BookOpen, CalendarDays, Check, CheckCircle2, ChevronDown, FileText, Gift, Hash, Headphones, ImageIcon, Layers3, LockKeyhole, MessageSquareQuote, Play, UserRound, Users, Video } from "lucide-react";
-import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { CourseDetailNav } from "@/components/course-detail-nav";
 import { CourseAction } from "@/components/course-action";
 import { getCourseMajorSectionCount, getProtectedCourseContent } from "@/lib/course-content";
+import { getPublishedCourse } from "@/lib/public-data";
 
 const K2_SLUG = "k2-coaching-htg-2026";
 const TOOLS_SLUG = "huong-dan-su-dung-bo-cong-cu-htg";
@@ -26,7 +26,7 @@ const feedbackImages = [
 
 export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata> {
   const {slug}=await params;
-  const course=await db.course.findFirst({where:{slug,status:"PUBLISHED"},select:{title:true,shortDescription:true,thumbnailUrl:true}});
+  const course=await getPublishedCourse(slug);
   if(!course)return {};
   const image=slug===K2_SLUG?K2_PREVIEW_IMAGE:course.thumbnailUrl;
   const url=`/courses/${slug}`;
@@ -55,7 +55,7 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
 export default async function CourseDetail({params,searchParams}:{params:Promise<{slug:string}>;searchParams:Promise<{required?:string}>}) {
   const {slug}=await params;
   const query=await searchParams;
-  const course=await db.course.findFirst({where:{slug,status:"PUBLISHED"},include:{category:true,instructor:true,sections:{orderBy:{position:"asc"},include:{lessons:{orderBy:{position:"asc"}}}}}});
+  const course=await getPublishedCourse(slug);
   if(!course)notFound();
   const lessons=course.sections.flatMap(s=>s.lessons);
   const protectedContent=getProtectedCourseContent(slug);

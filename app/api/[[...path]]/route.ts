@@ -30,6 +30,7 @@ import * as progress from "@/app/api/progress/handler";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type HandlerModule = Record<string, unknown>;
 type RouteContext = { params: Promise<Record<string, string>> };

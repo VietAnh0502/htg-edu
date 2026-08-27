@@ -1,16 +1,16 @@
 import Link from "next/link";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { db } from "@/lib/db";
 import { CourseCard } from "@/components/course-card";
+import { getPublicCategories, getPublishedCourses } from "@/lib/public-data";
 
 export const metadata={title:"Thư viện khóa học"};
 export const dynamic="force-dynamic";
 export default async function Courses({searchParams}:{searchParams:Promise<{q?:string;category?:string;sort?:string}>}) {
   const p=await searchParams;
-  const [courses,categories]=await Promise.all([
-    db.course.findMany({where:{status:"PUBLISHED",...(p.q?{OR:[{title:{contains:p.q,mode:"insensitive"}},{shortDescription:{contains:p.q,mode:"insensitive"}}]}:{}),...(p.category?{category:{slug:p.category}}:{})},orderBy:[{featured:"desc"},{createdAt:"desc"}],take:100,select:{id:true,title:true,slug:true,courseCode:true,shortDescription:true,thumbnailUrl:true,price:true,featured:true,category:{select:{name:true}},instructor:{select:{name:true}},sections:{select:{lessons:{select:{durationSeconds:true}}}}}}),
-    db.category.findMany({orderBy:{name:"asc"}})
-  ]);
+  const allCourses=await getPublishedCourses();
+  const categories=(await getPublicCategories()).toSorted((a,b)=>a.name.localeCompare(b.name,"vi"));
+  const query=p.q?.trim().toLocaleLowerCase("vi");
+  const courses=allCourses.filter(course=>(!query||course.title.toLocaleLowerCase("vi").includes(query)||course.shortDescription.toLocaleLowerCase("vi").includes(query))&&(!p.category||course.category.slug===p.category));
   const activeCategory=categories.find(c=>c.slug===p.category);
   return <main className="app-shell courses-page">
     <section className="courses-hero"><div className="container"><p className="eyebrow">Thư viện HTG EDU</p><h1>Chọn khóa học phù hợp<br/>với mục tiêu của bạn.</h1><p>Khám phá các chương trình học dành cho nhà đầu tư, từ kiến thức nền tảng đến phương pháp và kỹ năng thực hành.</p></div></section>

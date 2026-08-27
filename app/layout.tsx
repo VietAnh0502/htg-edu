@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   openGraph: { title: "HTG EDU — Học đầu tư bài bản", description: "Nền tảng học tập trực tuyến dành cho nhà đầu tư.", type: "website", locale: "vi_VN" },
   twitter: { card: "summary", title: "HTG EDU — Học đầu tư bài bản", description: "Nền tảng học tập trực tuyến dành cho nhà đầu tư." },
 };
+// Vercel Hobby defaults to a short function timeout. Database-backed routes
+// get a wider safety margin for cold starts; normal responses remain fast.
+export const maxDuration = 60;
 export default function RootLayout({children}:{children:React.ReactNode}) {
   return <html lang="vi"><body>
     <Header/>{children}

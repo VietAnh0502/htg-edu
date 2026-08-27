@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:e2e": "node scripts/e2e-test.mjs",
+    "test:routes": "node scripts/route-smoke-test.mjs",
     "user:reset-password": "node scripts/reset-user-password.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

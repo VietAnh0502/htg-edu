@@ -1,21 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BarChart3, BookOpen, BookOpenCheck, CheckCircle2, Clock3, GraduationCap, Layers3, LineChart, Play, Sparkles, Target, TrendingUp, UserRound, Users } from "lucide-react";
-import { db } from "@/lib/db";
 import { CourseCard } from "@/components/course-card";
 import { getCourseMajorSectionCount } from "@/lib/course-content";
+import { getPublicCategories, getPublicHomeStats, getPublishedCourses } from "@/lib/public-data";
 
 const categoryIcons = [TrendingUp, LineChart, BarChart3, Target, BookOpen, Layers3];
-// These pages depend on the live database. Rendering them during `next build`
-// makes deployments fail whenever the hosted database connection pool is busy.
 export const dynamic="force-dynamic";
 
 export default async function Home() {
-  // Keep query concurrency low for providers with a small session pool.
-  const courses=await db.course.findMany({where:{status:"PUBLISHED"},orderBy:[{featured:"desc"},{createdAt:"desc"}],take:6,select:{id:true,title:true,slug:true,courseCode:true,shortDescription:true,thumbnailUrl:true,price:true,featured:true,category:{select:{name:true}},instructor:{select:{name:true}},sections:{select:{lessons:{select:{durationSeconds:true}}}}}});
-  const categories=await db.category.findMany({include:{_count:{select:{courses:{where:{status:"PUBLISHED"}}}}},orderBy:{createdAt:"asc"},take:6});
-  const instructor=await db.instructor.findFirst({where:{name:{contains:"Tài"}},orderBy:{createdAt:"asc"}});
-  const studentCount=await db.user.count({where:{role:"STUDENT"}});
+  // Resolve cache entries sequentially because the Supabase pool intentionally
+  // exposes one connection per Prisma client.
+  const courses=(await getPublishedCourses()).slice(0,6);
+  const categories=(await getPublicCategories()).slice(0,6);
+  const {instructor,studentCount}=await getPublicHomeStats();
   const featured=courses[0];
   const featuredChapterCount=featured?getCourseMajorSectionCount(featured.slug,featured.sections.length):0;
 
