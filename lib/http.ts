@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
+import { isTransientDatabaseError } from "./db";
 
 export function apiError(error: unknown) {
   if (error instanceof ZodError) return NextResponse.json({ error: "Dữ liệu không hợp lệ", details: error.flatten() }, { status: 400 });
   if (error instanceof Error && error.message.startsWith("HTTP:")) {
     const [, status, ...parts] = error.message.split(":"); const message=parts.join(":");
     return NextResponse.json({ error: message }, { status: Number(status) });
+  }
+  if (isTransientDatabaseError(error)) {
+    console.error("[database:request] transient failure", error);
+    return NextResponse.json(
+      { error: "Kết nối dữ liệu tạm thời bị gián đoạn. Hệ thống đang tự khôi phục, vui lòng thử lại.", code: "DATABASE_UNAVAILABLE" },
+      { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "1" } },
+    );
   }
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") return NextResponse.json({ error: "Dữ liệu này đã tồn tại" }, { status: 409 });

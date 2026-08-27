@@ -8,4 +8,11 @@ export function rateLimit(key: string, limit = 10, windowMs = 60_000) {
   current.count++; return true;
 }
 
+export function refundRateLimit(key: string) {
+  const current = store.get(key);
+  if (!current) return;
+  if (current.count <= 1) store.delete(key);
+  else current.count -= 1;
+}
+
 export function clientIp(request: Request) { return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"; }
