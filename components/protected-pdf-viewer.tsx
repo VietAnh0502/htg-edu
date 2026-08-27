@@ -1,7 +1,8 @@
 "use client";
 
 import { AlertCircle, FileText, LoaderCircle, RotateCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
+import { useEffect, useRef, useState } from "react";
 
 const CHUNK_SIZE = 3 * 1024 * 1024;
 const CONCURRENT_REQUESTS = 2;
@@ -23,18 +24,124 @@ function parseContentRange(value: string | null) {
   return { start: Number(match[1]), end: Number(match[2]), total: Number(match[3]) };
 }
 
+function PdfPage({ document, pageNumber }: { document: PDFDocumentProxy; pageNumber: number }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [ratio, setRatio] = useState(1.414);
+
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    const observer = new IntersectionObserver(entries => {
+      setVisible(entries.some(entry => entry.isIntersecting));
+    }, { root: wrapper.closest(".pdf-pages-scroll"), rootMargin: "900px 0px" });
+    observer.observe(wrapper);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+      return;
+    }
+    let cancelled = false;
+    let renderTask: RenderTask | undefined;
+    let resizeObserver: ResizeObserver | undefined;
+    let lastWidth = 0;
+
+    void document.getPage(pageNumber).then(page => {
+      if (cancelled) return;
+      const original = page.getViewport({ scale: 1 });
+      const pageRatio = original.height / original.width;
+      setRatio(pageRatio);
+
+      const render = () => {
+        const wrapper = wrapperRef.current;
+        const canvas = canvasRef.current;
+        if (!wrapper || !canvas || cancelled) return;
+        const cssWidth = Math.max(1, wrapper.clientWidth);
+        if (cssWidth === lastWidth) return;
+        lastWidth = cssWidth;
+        renderTask?.cancel();
+        const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+        const viewport = page.getViewport({ scale: (cssWidth / original.width) * outputScale });
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        canvas.style.width = `${cssWidth}px`;
+        canvas.style.height = `${Math.round(cssWidth * pageRatio)}px`;
+        const context = canvas.getContext("2d", { alpha: false });
+        if (context) {
+          renderTask = page.render({ canvasContext: context, viewport });
+          void renderTask.promise.catch(renderError => {
+            if (renderError instanceof Error && renderError.name !== "RenderingCancelledException") console.error("Không thể render trang PDF", renderError);
+          });
+        }
+      };
+
+      render();
+      resizeObserver = new ResizeObserver(render);
+      if (wrapperRef.current) resizeObserver.observe(wrapperRef.current);
+    });
+
+    return () => {
+      cancelled = true;
+      resizeObserver?.disconnect();
+      renderTask?.cancel();
+    };
+  }, [document, pageNumber, visible]);
+
+  return <div ref={wrapperRef} className="pdf-page" style={{ aspectRatio: `1 / ${ratio}` }}><canvas ref={canvasRef} aria-label={`Trang ${pageNumber}`}/><span>{pageNumber}</span></div>;
+}
+
+function PdfPages({ data, title }: { data: ArrayBuffer; title: string }) {
+  const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let loadedDocument: PDFDocumentProxy | undefined;
+    let loadingTask: ReturnType<typeof import("pdfjs-dist")["getDocument"]> | undefined;
+
+    void import("pdfjs-dist").then(pdfjs => {
+      pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+      loadingTask = pdfjs.getDocument({ data: new Uint8Array(data.slice(0)) });
+      return loadingTask.promise;
+    }).then(pdf => {
+      loadedDocument = pdf;
+      if (active) setDocument(pdf);
+    }).catch(loadError => {
+      if (active) setError(loadError instanceof Error ? loadError.message : "Không thể đọc tài liệu PDF.");
+    });
+
+    return () => {
+      active = false;
+      void loadingTask?.destroy();
+      void loadedDocument?.destroy();
+    };
+  }, [data]);
+
+  if (error) return <div className="pdf-viewer-status pdf-viewer-error"><AlertCircle/><b>Không thể hiển thị giáo trình</b><p>{error}</p></div>;
+  if (!document) return <div className="pdf-viewer-status"><LoaderCircle className="pdf-loading-icon"/><b>Đang dựng các trang PDF</b><p>Vui lòng đợi trong giây lát</p></div>;
+
+  return <div className="pdf-pages-scroll" role="document" aria-label={`Tài liệu ${title}`}><div className="pdf-pages">{Array.from({ length: document.numPages }, (_, index) => <PdfPage key={index + 1} document={document} pageNumber={index + 1}/>)}</div></div>;
+}
+
 export function ProtectedPdfViewer({ courseId, title, documentToken, documentIndex = 0 }: { courseId: string; title: string; documentToken: string; documentIndex?: number }) {
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
-    let generatedUrl: string | null = null;
 
     async function loadPdf() {
-      setObjectUrl(null);
+      setPdfData(null);
       setError(null);
       setProgress(0);
 
@@ -51,9 +158,8 @@ export function ProtectedPdfViewer({ courseId, title, documentToken, documentInd
         const firstPart = await firstResponse.arrayBuffer();
 
         if (firstResponse.status === 200) {
-          generatedUrl = URL.createObjectURL(new Blob([firstPart], { type: "application/pdf" }));
           setProgress(100);
-          setObjectUrl(generatedUrl);
+          setPdfData(firstPart);
           return;
         }
 
@@ -97,9 +203,9 @@ export function ProtectedPdfViewer({ courseId, title, documentToken, documentInd
           }));
         }
 
-        generatedUrl = URL.createObjectURL(new Blob(parts, { type: "application/pdf" }));
+        const completePdf = await new Blob(parts, { type: "application/pdf" }).arrayBuffer();
         setProgress(100);
-        setObjectUrl(generatedUrl);
+        setPdfData(completePdf);
       } catch (loadError) {
         if (controller.signal.aborted) return;
         setError(loadError instanceof Error ? loadError.message : "Không thể tải tài liệu.");
@@ -109,12 +215,11 @@ export function ProtectedPdfViewer({ courseId, title, documentToken, documentInd
     void loadPdf();
     return () => {
       controller.abort();
-      if (generatedUrl) URL.revokeObjectURL(generatedUrl);
     };
   }, [attempt, courseId, documentIndex, documentToken]);
 
   if (error) return <div className="pdf-viewer-status pdf-viewer-error"><AlertCircle/><b>Không tải được giáo trình</b><p>{error}</p><button type="button" onClick={() => setAttempt(value => value + 1)}><RotateCcw size={16}/> Thử lại</button></div>;
-  if (!objectUrl) return <div className="pdf-viewer-status"><LoaderCircle className="pdf-loading-icon"/><b>Đang chuẩn bị giáo trình</b><p>Đã tải {progress}% · Vui lòng giữ trang này mở</p><div className="pdf-loading-track"><span style={{ width: `${progress}%` }}/></div></div>;
+  if (!pdfData) return <div className="pdf-viewer-status"><LoaderCircle className="pdf-loading-icon"/><b>Đang chuẩn bị giáo trình</b><p>Đã tải {progress}% · Vui lòng giữ trang này mở</p><div className="pdf-loading-track"><span style={{ width: `${progress}%` }}/></div></div>;
 
-  return <iframe src={`${objectUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`} title={`Tài liệu ${title}`} />;
+  return <PdfPages data={pdfData} title={title}/>;
 }
